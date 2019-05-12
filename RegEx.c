@@ -21,11 +21,13 @@ RESULTING FROM THE USE, MODIFICATION, OR
 REDISTRIBUTION OF THIS SOFTWARE.
 */
 
-// Please see the project home page for documentation
-// http://code.google.com/p/regular-expression-evaluator
+#include <stdlib.h>
+#include <memory.h>
+#include <stdint.h>
+#include <string.h>
 
 #ifdef STANDALONE
-#include <stdlib.h>
+#include <stdio.h>
 typedef unsigned char uchar;
 #endif
 
@@ -117,10 +119,10 @@ int nxt, prev = 0;
 			return NULL;
 		if( prev ) {
 			prevstack = base - prev;
-			prevstack->next = (uint)(base - stack);
+			prevstack->next = (uint32_t)(base - stack);
 		} else
-			clone->stack = (uint)(base - stack);
-		prev = (uint)(base - stack);
+			clone->stack = (uint32_t)(base - stack);
+		prev = (uint32_t)(base - stack);
 	} while( nxt = oldstack->next );
 
 	return clone;
@@ -177,7 +179,7 @@ uchar *pat;
 	if( node = regnode (expr) ) {
 		node->maximum = 1;
 		node->minimum = 1;
-		node->typelen = (uint)strlen(pat);
+		node->typelen = (uint32_t)strlen(pat);
 		node->type->pattern = pat;
 		node->parent = parent;
 	}
@@ -542,7 +544,7 @@ struct Probe *stack;
 		//	add to free list
 
 		stack->next = expr->dead;
-		expr->dead = (uint)(base - stack);
+		expr->dead = (uint32_t)(base - stack);
 
 		// 	move to parent node in tree
 
@@ -595,7 +597,7 @@ struct Probe *base = (struct Probe *)((uchar *)expr + expr->size);
 int idx, nxt;
 
 	probe->next = expr->dead;
-	expr->dead = (uint)(base - probe);
+	expr->dead = (uint32_t)(base - probe);
 
 	//	kill expression stack
 
@@ -631,13 +633,13 @@ int idx, queue;
 	//	by calculating number of nodes
 	//	and multiplying by source len
 
-	idx = (uint)((expr->memo - (uchar *)(expr + 1)) / sizeof(struct Node));
+	idx = (uint32_t)((expr->memo - (uchar *)(expr + 1)) / sizeof(struct Node));
 
 	//	convert number of bits to number of bytes
 	//	and clear memo array
 
 	idx = (idx * (amt + 1) + 7) / 8;
-	expr->tree = idx + (uint)(expr->memo - (uchar *)(expr + 1));
+	expr->tree = idx + (uint32_t)(expr->memo - (uchar *)(expr + 1));
 
 	if( expr->tree + (int)sizeof(struct Expr) > expr->size )
 		return 0;	// out of memory
@@ -651,7 +653,7 @@ int idx, queue;
 	else
 		return 0;	// out of memory
 
-	queue = (uint)(base - probe);
+	queue = (uint32_t)(base - probe);
 
 	//	evaluate input string against parse tree
 	//	until a probe reaches both the end of the
@@ -682,7 +684,7 @@ int idx, queue;
 		//	of this node at this offset before,
 		//	abandon our probe.
 
-		idx = (uint)(probe->node - (struct Node *)(expr + 1));
+		idx = (uint32_t)(probe->node - (struct Node *)(expr + 1));
 		idx *= amt + 1;
 		idx += probe->off;
 
@@ -700,7 +702,7 @@ int idx, queue;
 		  if( clone = regclone (expr, probe) ) {
 			clone->occurrence = clone->node->maximum;
 			clone->next = queue;
-			queue = (uint)(base - clone);
+			queue = (uint32_t)(base - clone);
 		  } else
 			return 0;		//	out of memory
 
@@ -720,7 +722,7 @@ int idx, queue;
 			stack->off = probe->off;
 
 			probe->node = probe->node->type->child;
-			probe->stack = (uint)(base - stack);
+			probe->stack = (uint32_t)(base - stack);
 			probe->occurrence = 0;
 			continue;
 		}
@@ -787,7 +789,7 @@ struct Expr *expr;
 int size;
 
 	if( argc < 3 ) {
-		fprintf ("Usage regexpr value expression\n");
+		fprintf (stderr, "Usage: regexpr value expression\n");
 		return 1;
 	}
 	if( argc > 3 )
@@ -797,11 +799,11 @@ int size;
 
 	expr = malloc (size);
 	expr->val = args[1];
-	expr->amt = (uint)strlen (args[1]);
+	expr->amt = (uint32_t)strlen (args[1]);
 
-	if( !regcomp(expr, size, args[2], (uint)strlen(args[2])) )
+	if( !regcomp(expr, size, args[2], (uint32_t)strlen(args[2])) )
 		fprintf (stderr, "Pattern compilation error\n");
-	else if( regevaluate (expr, args[1], (uint)strlen(args[1])) )
+	else if( regevaluate (expr, args[1], (uint32_t)strlen(args[1])) )
 		fprintf (stderr, "Match in %d steps\n", expr->steps);
 	else
 		fprintf (stderr, "No match in %d steps\n", expr->steps);
